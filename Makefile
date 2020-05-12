@@ -53,7 +53,7 @@ stack-status:
 
 .PHONY: create-activation
 create-activation:
-	aws ssm create-activation --default-instance-name FargateContainers --iam-role AutomationServiceRole --registration-limit 100 --region us-west-2 --tags "Key=App,Value=FargateDemo"
+	aws ssm create-activation --default-instance-name FargateContainers --iam-role AutomationServiceRole --registration-limit 100 --region ap-southeast-2 --tags "Key=App,Value=FargateDemo"
 
 .PHONY: render-task-parameters
 render-task-parameters:

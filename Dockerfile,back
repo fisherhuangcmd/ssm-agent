@@ -1,0 +1,68 @@
+FROM python:3.7-slim-buster AS base
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Australia/Melbourne
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gettext \
+        vim-tiny \
+        libpq5 \
+        mime-support \
+        nodejs \
+        npm \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install -U pip \
+    && pip install pipenv==2018.11.26 \
+    && useradd --uid 1000 --create-home django \
+    && mkdir -p /etc/ /code/webstatic/collectedstatic /code/webstatic/usermedia \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+WORKDIR /code
+
+
+FROM base AS production
+
+ENV NEW_RELIC_CONFIG_FILE=/etc/newrelic.ini PIP_NO_CACHE_DIR=false
+COPY infrastructure/docker-entrypoint.sh /usr/local/bin/
+COPY infrastructure/newrelic.ini /etc/
+COPY package.json Gruntfile.js /code/
+RUN npm install
+COPY Pipfile* /code/
+RUN pipenv install --ignore-pipfile --system
+COPY ksub/ /code/ksub/
+WORKDIR /code/ksub
+RUN npm run build \
+    && python manage.py collectstatic --noinput \
+    && chown django:django -R /code
+USER django:django
+ENTRYPOINT [ "docker-entrypoint.sh" ]
+# default to gunicorn
+CMD [ "app" ]
+
+
+FROM base as dev
+
+ENV PIP_NO_CACHE_DIR=false
+COPY infrastructure/docker-entrypoint.sh /usr/local/bin/
+COPY Pipfile* /code/
+RUN pipenv install --dev --system
+USER django:django
+ENTRYPOINT [ "docker-entrypoint.sh" ]
+CMD [ "dev_app" ]
+
+
+FROM production as bastion
+# FROM amazonlinux:2
+RUN yum update -y \
+ && yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm \
+ && yum install -y python \
+ && yum install -y shadow-utils \
+ && yum clean all \
+ && rm -rf /var/cache/yum \
+ && mv /etc/amazon/ssm/seelog.xml.template /etc/amazon/ssm/seelog.xml
+COPY files/systemctl.py /usr/bin/systemctl
+COPY files/entrypoint.sh /usr/local/bin/
+RUN adduser ssm-user
+RUN chmod +x /usr/local/bin/entrypoint.sh 
+ENTRYPOINT [ "entrypoint.sh" ]
+CMD [ "systemctl", "start", "amazon-ssm-agent" ]

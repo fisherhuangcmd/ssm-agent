@@ -8,6 +8,7 @@ RUN yum update -y \
  && yum install -y supervisor \
  && yum install -y redis \
  && yum install -y net-tools \
+ && yum install -y bind-utils \
  && yum install -y sudo \
  && yum clean all \
  && rm -rf /var/cache/yum \

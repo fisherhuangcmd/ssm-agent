@@ -52,6 +52,11 @@ Resources:
         - Name: !Ref 'ServiceName'
           Cpu: !Ref 'ContainerCpu'
           Memory: !Ref 'ContainerMemory'
+          Secrets:
+            - Name: "KSUB_SECRET_KEY"
+              ValueFrom: "arn:aws:secretsmanager:ap-southeast-2:392008160963:secret:ksub/uat/KSUB_SECRET_KEY-xyfrSn"
+            - Name: "KSUB_EMAIL_URL"
+              ValueFrom: "arn:aws:secretsmanager:ap-southeast-2:392008160963:secret:ksub/uat/KSUB_EMAIL_URL-4pUeRh"
           Image: !Ref 'ImageUrl'
           PortMappings:
             - ContainerPort: !Ref 'ContainerPort'
@@ -59,5 +64,5 @@ Resources:
             LogDriver: awslogs
             Options: 
               awslogs-group: "/ecs/ssm-agent"
-              awslogs-region: "us-west-2"
+              awslogs-region: "ap-southeast-2"
               awslogs-stream-prefix: "ecs"

@@ -35,6 +35,8 @@ Resources:
               - ecr:BatchGetImage
               - logs:CreateLogStream
               - logs:PutLogEvents
+              - secretsmanager:GetSecretValue
+              - kms:Decrypt
             Resource: '*'
   ecsTaskExecutionRole:
     Type: AWS::IAM::Role
